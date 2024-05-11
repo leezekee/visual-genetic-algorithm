@@ -1,0 +1,196 @@
+import math
+
+from PyQt6.QtWidgets import (QWidget, QSlider, QApplication,
+                             QHBoxLayout, QVBoxLayout, QLabel, QInputDialog, QDialog, QMessageBox)
+from PyQt6.QtCore import QObject, Qt, pyqtSignal
+from PyQt6.QtGui import QPainter, QFont, QColor, QPen, QIcon, QCursor
+from qfluentwidgets import SubtitleLabel, setFont, TitleLabel, TransparentToggleToolButton, TransparentPushButton
+
+from utils.mode import Mode
+
+
+class GraphView(QWidget):
+	onStatusChanged = pyqtSignal()
+
+	def __init__(self, graph, parent=None):
+		super().__init__(parent=parent)
+		if graph is None:
+			raise ValueError("Graph cannot be None")
+		self.graph = graph
+		self.parent = parent
+		self.node_radius = 15
+		self.font_size = 10
+		self.mode = Mode.NORMAL
+		self.selected_node = -1
+		self.init_graph()
+	def paintEvent(self, e):
+		size = self.size()
+		w = size.width()
+		h = size.height()
+		painter = QPainter()
+		painter.begin(self)
+		# 边框
+		painter.setPen(QPen(QColor(229, 229, 229), 2, Qt.PenStyle.SolidLine))
+		painter.drawRoundedRect(0, 0, w, h, 10, 10)
+		# 点状背景
+		painter.setPen(QPen(QColor(227, 227, 227)))
+		painter.setBrush(QColor(227, 227, 227))
+		cur_h = -5
+		cur_w = -5
+		while cur_h < h:
+			cur_h += 10
+			while cur_w < w:
+				cur_w += 10
+				painter.drawEllipse(cur_w, cur_h, 2, 2)
+			cur_w = -7
+
+		self.draw_board(painter)
+		painter.end()
+
+	def init_graph(self):
+		# 随机10个点
+		self.graph.add_node(48, 56)
+		self.graph.add_node(345, 310)
+		self.graph.add_node(102, 431)
+		self.graph.add_node(234, 234)
+
+		# 强连通
+		self.graph.add_edge(0, 1, 10)
+		self.graph.add_edge(1, 2, 20)
+		self.graph.add_edge(2, 3, 30)
+		self.graph.add_edge(3, 0, 40)
+		self.graph.add_edge(0, 2, 50)
+		self.graph.add_edge(1, 3, 60)
+
+
+	def draw_board(self, painter):
+		self.draw_nodes(painter)
+		self.draw_edges(painter)
+
+	def draw_nodes(self, painter):
+		nodes = self.graph.nodes
+		for node in nodes:
+			x = node["x"]
+			y = node["y"]
+			node_id = nodes.index(node)
+			self.draw_node(painter, x, y, node_id)
+
+	def draw_node(self, painter, x, y, node_id):
+		if self.selected_node == node_id:
+			painter.setPen(QPen(QColor(255, 181, 115), 2, Qt.PenStyle.SolidLine))
+			painter.setBrush(QColor(255, 181, 115))
+		else:
+			painter.setPen(QPen(QColor(0, 158, 171), 2, Qt.PenStyle.SolidLine))
+			painter.setBrush(QColor(0, 158, 171))
+		painter.setFont(QFont('Arial', self.font_size))
+		painter.drawEllipse(int(x - self.node_radius), int(y - self.node_radius), int(2 * self.node_radius), int(2 * self.node_radius))
+		id_l = len(str(node_id))
+		offset_x = 3 * id_l
+		offset_y = int(self.font_size / 2)
+		if self.selected_node == node_id:
+			painter.setPen(QColor(255, 255, 255))
+		else:
+			painter.setPen(QColor(255, 181, 115))
+		painter.drawText(int(x - offset_x), int(y + offset_y), str(node_id))
+
+	def draw_edges(self, painter):
+		edges = self.graph.edges
+		drawed_edges = []
+		for edge in edges:
+			start = edge["start"]
+			end = edge["end"]
+			weight = edge["weight"]
+			converse_edge = {
+				"start": end,
+				"end": start,
+				"weight": weight
+			}
+			if edge in drawed_edges or converse_edge in drawed_edges:
+				continue
+			self.draw_edge(painter, start, end, weight)
+			drawed_edges.append(edge)
+
+	def draw_edge(self, painter, start, end, weight):
+		s_node = self.graph.nodes[start]
+		e_node = self.graph.nodes[end]
+		s_x = s_node["x"]
+		s_y = s_node["y"]
+		e_x = e_node["x"]
+		e_y = e_node["y"]
+		d = math.sqrt((s_x - e_x) ** 2 + (s_y - e_y) ** 2)
+
+		start_offset_x = int((self.node_radius / d) * (e_x - s_x))
+		start_offset_y = int((self.node_radius / d) * (e_y - s_y))
+		end_offset_x = int((self.node_radius / d) * (s_x - e_x))
+		end_offset_y = int((self.node_radius / d) * (s_y - e_y))
+
+		line_start_x = s_x + start_offset_x
+		line_start_y = s_y + start_offset_y
+		line_end_x = e_x + end_offset_x
+		line_end_y = e_y + end_offset_y
+
+		line_start_x = int(line_start_x)
+		line_start_y = int(line_start_y)
+		line_end_x = int(line_end_x)
+		line_end_y = int(line_end_y)
+
+		painter.setPen(QPen(QColor(0, 158, 171), 2, Qt.PenStyle.SolidLine))
+		painter.drawLine(line_start_x, line_start_y, line_end_x, line_end_y)
+
+		text_x = int((line_start_x + line_end_x) / 2)
+		text_y = int((line_start_y + line_end_y) / 2)
+		painter.setFont(QFont('Arial', self.font_size))
+		painter.setPen(QColor(0, 158, 171))
+		painter.drawText(text_x, text_y, str(weight))
+
+	def update_mode(self, mode):
+		self.mode = mode
+
+	def add_edge(self, start, end):
+		weight, ok = QInputDialog.getInt(self, "Input", "Enter weight:")
+		if ok:
+			if weight <= 0:
+				# show error
+				QMessageBox.warning(self, "Error", "Weight must be a positive number")
+			else:
+				self.graph.add_edge(start, end, weight)
+
+	def get_clicked_node(self, x, y):
+		nodes = self.graph.nodes
+		for node in nodes:
+			n_x = node["x"]
+			n_y = node["y"]
+			if math.sqrt((n_x - x) ** 2 + (n_y - y) ** 2) <= self.node_radius:
+				return nodes.index(node)
+		return -1
+
+	def mousePressEvent(self, a0):
+		x = a0.position().x()
+		y = a0.position().y()
+
+		node_id = self.get_clicked_node(x, y)
+
+		if self.mode == Mode.ADD_NODE:
+			self.graph.add_node(x, y)
+		elif self.mode == Mode.ADD_EDGE:
+			if self.selected_node == -1:
+				self.selected_node = node_id
+			elif self.selected_node == node_id:
+				self.selected_node = -1
+			else:
+				self.add_edge(self.selected_node, node_id)
+				self.selected_node = -1
+		elif self.mode == Mode.REMOVE_NODE:
+			if node_id != -1:
+				self.graph.remove_node(node_id)
+		elif self.mode == Mode.REMOVE_EDGE:
+			if self.selected_node == -1:
+				self.selected_node = node_id
+			elif self.selected_node == node_id:
+				self.selected_node = -1
+			elif node_id != -1 and self.selected_node != -1:
+				self.graph.remove_edge(self.selected_node, node_id)
+				self.selected_node = -1
+		self.update()
+		self.onStatusChanged.emit()
+
