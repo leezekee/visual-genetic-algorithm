@@ -27,7 +27,7 @@ class ChartView(QWidget):
 
 		self.title = title
 		self.current = 0
-		self.data_list = []
+		self.data_list = np.array([])
 		self.mainLayout = QVBoxLayout()
 		self.mainLayout.addWidget(StrongBodyLabel(self.title), alignment=Qt.AlignmentFlag.AlignCenter)
 		self.mainLayout.addWidget(self.pw)
@@ -36,25 +36,13 @@ class ChartView(QWidget):
 	def paintEvent(self, a0):
 		pass
 
-	def set_data(self, data):
-		series_x = np.arange(1, len(data) + 1)
-		series_y = np.array(data[:])
-		self.curve.clear()
-		self.curve.setData(series_x, series_y)
-		self.repaint()
-
-	def set_current(self, current):
-		if current < 1:
-			return
-		self.current = current
-		self.set_data(self.data_list[current - 1])
-		self.repaint()
-
 	def add_data(self, data):
-		# 取上一次的数据
-		new_data = self.data_list[-1][:] if len(self.data_list) > 0 else []
-		new_data.append(data)
-		self.data_list.append(new_data)
+		self.data_list = np.append(self.data_list, data)
+		series_x = np.arange(1, np.size(self.data_list, 0) + 1)
+		series_y = self.data_list
+		self.curve.clear()
+		# 下标从1开始
+		self.curve.setData(series_x, series_y)
 		self.repaint()
 
 	def clear_data(self):

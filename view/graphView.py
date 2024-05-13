@@ -1,7 +1,8 @@
 import math
 
+import numpy as np
 from PyQt6.QtWidgets import (QWidget, QSlider, QApplication,
-                             QHBoxLayout, QVBoxLayout, QLabel, QInputDialog, QDialog, QMessageBox)
+                             QHBoxLayout, QVBoxLayout, QLabel, QInputDialog, QDialog, QMessageBox, QFileDialog)
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QPainter, QFont, QColor, QPen, QIcon, QCursor
 from qfluentwidgets import SubtitleLabel, setFont, TitleLabel, TransparentToggleToolButton, TransparentPushButton
@@ -11,6 +12,7 @@ from utils.mode import Mode
 
 class GraphView(QWidget):
 	onStatusChanged = pyqtSignal()
+	onGraphChanged = pyqtSignal()
 
 	def __init__(self, graph, parent=None):
 		super().__init__(parent=parent)
@@ -22,7 +24,7 @@ class GraphView(QWidget):
 		self.font_size = 10
 		self.mode = Mode.NORMAL
 		self.selected_node = -1
-		self.init_graph()
+
 	def paintEvent(self, e):
 		size = self.size()
 		w = size.width()
@@ -47,22 +49,6 @@ class GraphView(QWidget):
 		self.draw_board(painter)
 		painter.end()
 
-	def init_graph(self):
-		# 随机10个点
-		self.graph.add_node(48, 56)
-		self.graph.add_node(345, 310)
-		self.graph.add_node(102, 431)
-		self.graph.add_node(234, 234)
-
-		# 强连通
-		self.graph.add_edge(0, 1, 10)
-		self.graph.add_edge(1, 2, 20)
-		self.graph.add_edge(2, 3, 30)
-		self.graph.add_edge(3, 0, 40)
-		self.graph.add_edge(0, 2, 50)
-		self.graph.add_edge(1, 3, 60)
-
-
 	def draw_board(self, painter):
 		self.draw_nodes(painter)
 		self.draw_edges(painter)
@@ -83,7 +69,8 @@ class GraphView(QWidget):
 			painter.setPen(QPen(QColor(0, 158, 171), 2, Qt.PenStyle.SolidLine))
 			painter.setBrush(QColor(0, 158, 171))
 		painter.setFont(QFont('Arial', self.font_size))
-		painter.drawEllipse(int(x - self.node_radius), int(y - self.node_radius), int(2 * self.node_radius), int(2 * self.node_radius))
+		painter.drawEllipse(int(x - self.node_radius), int(y - self.node_radius), int(2 * self.node_radius),
+		                    int(2 * self.node_radius))
 		id_l = len(str(node_id))
 		offset_x = 3 * id_l
 		offset_y = int(self.font_size / 2)
@@ -119,10 +106,29 @@ class GraphView(QWidget):
 		e_y = e_node["y"]
 		d = math.sqrt((s_x - e_x) ** 2 + (s_y - e_y) ** 2)
 
-		start_offset_x = int((self.node_radius / d) * (e_x - s_x))
-		start_offset_y = int((self.node_radius / d) * (e_y - s_y))
-		end_offset_x = int((self.node_radius / d) * (s_x - e_x))
-		end_offset_y = int((self.node_radius / d) * (s_y - e_y))
+		if s_x == e_x:
+			start_offset_x = 0
+			end_offset_x = 0
+			if s_y < e_y:
+				start_offset_y = self.node_radius
+				end_offset_y = -self.node_radius
+			else:
+				start_offset_y = -self.node_radius
+				end_offset_y = self.node_radius
+		elif s_y == e_y:
+			start_offset_y = 0
+			end_offset_y = 0
+			if s_x < e_x:
+				start_offset_x = self.node_radius
+				end_offset_x = -self.node_radius
+			else:
+				start_offset_x = -self.node_radius
+				end_offset_x = self.node_radius
+		else:
+			start_offset_x = int((self.node_radius / d) * (e_x - s_x))
+			start_offset_y = int((self.node_radius / d) * (e_y - s_y))
+			end_offset_x = int((self.node_radius / d) * (s_x - e_x))
+			end_offset_y = int((self.node_radius / d) * (s_y - e_y))
 
 		line_start_x = s_x + start_offset_x
 		line_start_y = s_y + start_offset_y
@@ -134,26 +140,20 @@ class GraphView(QWidget):
 		line_end_x = int(line_end_x)
 		line_end_y = int(line_end_y)
 
-		painter.setPen(QPen(QColor(0, 158, 171), 2, Qt.PenStyle.SolidLine))
+		painter.setPen(QPen(QColor(0, 158, 171, 100), 2, Qt.PenStyle.SolidLine))
 		painter.drawLine(line_start_x, line_start_y, line_end_x, line_end_y)
 
 		text_x = int((line_start_x + line_end_x) / 2)
 		text_y = int((line_start_y + line_end_y) / 2)
 		painter.setFont(QFont('Arial', self.font_size))
-		painter.setPen(QColor(0, 158, 171))
+		painter.setPen(QColor(0, 158, 171, 200))
 		painter.drawText(text_x, text_y, str(weight))
 
 	def update_mode(self, mode):
 		self.mode = mode
 
 	def add_edge(self, start, end):
-		weight, ok = QInputDialog.getInt(self, "Input", "Enter weight:")
-		if ok:
-			if weight <= 0:
-				# show error
-				QMessageBox.warning(self, "Error", "Weight must be a positive number")
-			else:
-				self.graph.add_edge(start, end, weight)
+		self.graph.graphify()
 
 	def get_clicked_node(self, x, y):
 		nodes = self.graph.nodes
@@ -172,25 +172,37 @@ class GraphView(QWidget):
 
 		if self.mode == Mode.ADD_NODE:
 			self.graph.add_node(x, y)
-		elif self.mode == Mode.ADD_EDGE:
-			if self.selected_node == -1:
-				self.selected_node = node_id
-			elif self.selected_node == node_id:
-				self.selected_node = -1
-			else:
-				self.add_edge(self.selected_node, node_id)
-				self.selected_node = -1
 		elif self.mode == Mode.REMOVE_NODE:
 			if node_id != -1:
 				self.graph.remove_node(node_id)
-		elif self.mode == Mode.REMOVE_EDGE:
-			if self.selected_node == -1:
-				self.selected_node = node_id
-			elif self.selected_node == node_id:
-				self.selected_node = -1
-			elif node_id != -1 and self.selected_node != -1:
-				self.graph.remove_edge(self.selected_node, node_id)
-				self.selected_node = -1
 		self.update()
 		self.onStatusChanged.emit()
 
+	def save(self):
+		file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Graph files (*.graph)")
+		if file_path:
+			with open(file_path, "w") as f:
+				f.write(f"Nodes {len(self.graph.nodes)}\n")
+				for node in self.graph.nodes:
+					f.write(f"{int(node['x'])} {int(node['y'])}\n")
+		self.update()
+
+	def load(self):
+		file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Graph files (*.graph)")
+		if file_path:
+			with open(file_path, "r") as f:
+				self.graph.clear()
+				nodes = int(f.readline().split()[1])
+				for _ in range(nodes):
+					x, y = map(int, f.readline().split())
+					self.graph.add_node(int(x), int(y))
+			self.graph.graphify()
+		self.update()
+
+	def update(self):
+		self.repaint()
+		self.onGraphChanged.emit()
+
+	def clear(self):
+		self.graph.clear()
+		self.update()

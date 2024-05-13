@@ -1,6 +1,11 @@
 import numpy as np
 
 
+def calculate_distance(s_node, e_node):
+	distance = np.sqrt((s_node["x"] - e_node["x"]) ** 2 + (s_node["y"] - e_node["y"]) ** 2)
+	return distance.round(2)
+
+
 class Graph:
 	def __init__(self):
 		self.current_node = 0
@@ -13,38 +18,11 @@ class Graph:
 		self.graphify()
 		self.current_node += 1
 
-	def add_edge(self, start, end, weight):
-		if weight < 0:
-			return False
-		new_edge_1 = {
-			"start": start,
-			"end": end,
-			"weight": weight
-		}
-		new_edge_2 = {
-			"start": end,
-			"end": start,
-			"weight": weight
-		}
-		self.edges.append(new_edge_1)
-		self.edges.append(new_edge_2)
-		self.matrix[start][end] = weight
-		self.matrix[end][start] = weight
-		return True
+	def add_node_without_edges(self, x=-1, y=-1):
+		self.nodes.append({"x": x, "y": y})
+		self.graphify(False)
+		self.current_node += 1
 
-	def remove_edge(self, start, end):
-		for edge in self.edges:
-			if (edge["start"] == start and edge["end"] == end) or (edge["start"] == end and edge["end"] == start):
-				reversed_edge = {
-					"start": edge["end"],
-					"end": edge["start"],
-					"weight": edge["weight"]
-				}
-				self.edges.remove(edge)
-				if reversed_edge in self.edges:
-					self.edges.remove(reversed_edge)
-				self.matrix[start][end] = np.inf
-				self.matrix[end][start] = np.inf
 
 	def remove_node(self, node):
 		for edge in self.edges[:]:
@@ -58,7 +36,22 @@ class Graph:
 		self.current_node -= 1
 		self.graphify()
 
-	def graphify(self):
+	def generate_edges(self):
+		# 将每两个节点之间的距离作为边的权重
+		self.edges = []
+		for i in range(len(self.nodes)):
+			for j in range(len(self.nodes)):
+				if i == j:
+					continue
+				self.edges.append({
+					"start": i,
+					"end": j,
+					"weight": calculate_distance(self.nodes[i], self.nodes[j])
+				})
+
+	def graphify(self, gen=True):
+		if gen:
+			self.generate_edges()
 		rows = len(self.nodes)
 		cols = rows
 		self.matrix = np.full((rows, cols), np.inf)
@@ -66,6 +59,7 @@ class Graph:
 		for edge in self.edges:
 			self.matrix[edge["start"]][edge["end"]] = int(edge["weight"])
 			self.matrix[edge["end"]][edge["start"]] = int(edge["weight"])
+
 
 	def load_distance_matrix(self, filename):
 		# 首先，我们需要读取文件来确定城市数量
@@ -90,3 +84,15 @@ class Graph:
 		self.matrix = matrix
 		self.nodes = max_city + 1
 
+	def clear(self):
+		self.current_node = 0
+		self.matrix = []
+		self.nodes = []
+		self.edges = []
+
+	def get_nodes(self):
+		res = []
+		for node in self.nodes:
+			res.append([node["x"], node["y"]])
+		res = np.array(res)
+		return res

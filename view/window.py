@@ -1,11 +1,12 @@
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QWidget
 
-from utils.calc import CalcThread
-from view.dataWidget import DataWidget
+from utils.ga_calc import GAThread
+from view.resultWidget import ResultWidget
 from view.graphWidget import GraphWidget
 
-from qfluentwidgets import FluentWindow
+from qfluentwidgets import FluentWindow, SingleDirectionScrollArea
 
 from view.myIcon import MyIcon
 from view.chartWidget import ChartWidget
@@ -20,33 +21,85 @@ class Window(FluentWindow):
 
 		# 创建子界面，实际使用时将 Widget 换成自己的子界面
 		self.graph = GraphWidget('Graph Generate', self, self.g)
-		self.chart = ChartWidget('Real-time Chart', self, self.g)
-		self.data = DataWidget('Data in Process', self, self.g)
-		self.calc = CalcThread(self.g)
+		self.ga_chart = ChartWidget('GA Analysis Chart', self, self.g)
+		self.ga_result = ResultWidget('GA Result', self, self.g)
+		self.other_chart = ChartWidget('Other Analysis Chart', self, self.g)
+		self.other_result = ResultWidget('Other Result', self, self.g)
+		self.ga_calc = GAThread(self.g)
 
-		self.graph.onStatusChanged.connect(self.chart.update)
-		self.chart.onCalcStart.connect(self.start_calc)
-		self.calc.onEpochChanged.connect(self.chart.sync_data)
-		self.calc.onFinished.connect(self.chart.calc_finish)
+		self.graph.onStatusChanged.connect(self.ga_chart.update)
+		self.graph.onStatusChanged.connect(self.other_chart.update)
+		self.graph.onGraphChanged.connect(self.ga_result.handle_graph_change)
+		self.graph.onGraphChanged.connect(self.ga_chart.update)
+		self.graph.onGraphChanged.connect(self.other_result.handle_graph_change)
+		self.graph.onGraphChanged.connect(self.other_chart.update)
+
+		self.ga_chart.onCalcStart.connect(self.start_calc)
+		self.ga_chart.onGSet.connect(self.ga_calc.set_G)
+		self.ga_chart.onWidgetSwitch.connect(self.go_ga_detail)
+
+		self.ga_calc.onEpochChanged.connect(self.ga_chart.sync_data)
+		self.ga_calc.onPathChanged.connect(self.ga_result.sync_data)
+		self.ga_calc.onFinished.connect(self.ga_chart.calc_finish)
+		self.ga_calc.onCalcFinished.connect(self.ga_result.handle_data_change)
+		self.ga_calc.onCalcFinished.connect(self.ga_chart.handle_data_change)
+
+		# self.ga_calc.onEpochChanged.connect(self.other_chart.sync_data)
+		# self.ga_calc.onFinished.connect(self.other_chart.calc_finish)
+		# self.ga_calc.onCalcFinished.connect(self.other_result.handle_data_change)
+
+		self.other_chart.onCalcStart.connect(self.start_calc)
+
 		self.onCalcStop.connect(self.stop_calc)
-		self.calc.onCalcFinished.connect(self.data.handle_data_change)
 
 		self.initNavigation()
 		self.initWindow()
 
 	def initNavigation(self):
 		self.addSubInterface(self.graph, MyIcon.GRAPH, 'Graph Generate')
-		self.addSubInterface(self.chart, MyIcon.CHART, 'Real-time Plot')
-		self.addSubInterface(self.data, MyIcon.DATA, 'Data in Process')
+		self.navigationInterface.addSeparator()
+		self.navigationInterface.addItem(
+			routeKey='GA',
+			icon=MyIcon.GA,
+			text='Genetic Algorithm ↓',
+			onClick=self.do_nothing,
+			selectable=False,
+			tooltip='Genetic Algorithm ↓'
+		)
+		self.addSubInterface(self.ga_chart, MyIcon.CHART, 'Analysis Chart')
+		self.addSubInterface(self.ga_result, MyIcon.DATA, 'Data in Process')
+		self.navigationInterface.addSeparator()
+		self.navigationInterface.addItem(
+			routeKey='ALGORITHM',
+			icon=MyIcon.ALGORITHM,
+			text='Other Algorithm ↓',
+			onClick=self.do_nothing,
+			selectable=False,
+			tooltip='Other Algorithm ↓'
+		)
+		self.addSubInterface(self.other_chart, MyIcon.CHART, 'Analysis Chart')
+		self.addSubInterface(self.other_result, MyIcon.DATA, 'Data in Process')
+
+		self.navigationInterface.setExpandWidth(200)
 
 	def initWindow(self):
-		self.setFixedSize(800, 600)
+		self.setMinimumSize(1260, 960)
 		self.setWindowIcon(QIcon('assets/icon.png'))
 		self.setWindowTitle('Genetic Algorithm')
+		# 出现在屏幕中央
+		x = int((self.screen().size().width() - self.width()) / 2)
+		y = int((self.screen().size().height() - self.height()) / 2)
+		self.move(x, y)
 
 	def start_calc(self):
-		self.calc.start()
-		self.calc.wait()
+		self.ga_calc.start()
+		# self.calc.wait()
 
 	def stop_calc(self):
-		self.calc.stop()
+		self.ga_calc.stop()
+
+	def do_nothing(self):
+		pass
+
+	def go_ga_detail(self):
+		self.switchTo(self.ga_result)
