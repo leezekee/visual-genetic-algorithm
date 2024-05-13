@@ -101,7 +101,14 @@ class ResultWidget(QWidget):
 					"end": i,
 					"weight": self.res_graph.matrix[i - 1][i]
 				})
-
+			if i == len(self.path) - 1:
+				self.res_graph.matrix[i][0] = calculate_distance(node[0], node[1], self.path[0][0], self.path[0][1])
+				self.res_graph.matrix[0][i] = self.res_graph.matrix[i][0]
+				self.res_graph.edges.append({
+					"start": 0,
+					"end": i,
+					"weight": self.res_graph.matrix[i][0]
+				})
 			last_node = node
 		self.graphView.graph = self.res_graph
 		self.graphView.update()
