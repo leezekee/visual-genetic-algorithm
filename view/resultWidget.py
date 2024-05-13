@@ -66,10 +66,9 @@ class ResultWidget(QWidget):
 		self.setObjectName(self.text.replace(' ', '-'))
 
 	def handle_data_change(self, best_distance):
-		print(best_distance)
 		self.distance = best_distance
 		# self.path = best_path
-		self.distanceLabel.setText(f"Distance: {abs(self.distance)}")
+		self.distanceLabel.setText(f"Distance: {self.distance}")
 
 	def sync_data(self, path, distance):
 		self.path_list.append(path)

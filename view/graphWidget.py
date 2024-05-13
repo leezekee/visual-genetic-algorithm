@@ -61,8 +61,8 @@ class GraphWidget(QWidget):
 		self.saveButton.clicked.connect(self.graphView.save)
 		self.loadButton.clicked.connect(self.graphView.load)
 
-		self.graphToolLayout.addWidget(self.saveButton)
 		self.graphToolLayout.addWidget(self.loadButton)
+		self.graphToolLayout.addWidget(self.saveButton)
 
 		self.mainLayout.addLayout(self.titleLayout, 0)
 		self.mainLayout.addLayout(self.toolBoxLayout, 0)

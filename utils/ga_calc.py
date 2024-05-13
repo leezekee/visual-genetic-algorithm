@@ -63,6 +63,22 @@ def crossover_and_mutation(F, NP, N, D):
 	return F
 
 
+def online_judge(f, T, NP):
+	# prin t(f)
+	v = 0
+	for i in range(0, T):
+		for j in range(0, NP):
+			v += f[i][j]
+	return v / (T * NP)
+
+
+def offline_judge(f_, T):
+	v = 0
+	for i in range(0, T):
+		v += f_[i]
+	return v / T
+
+
 class GAThread(QThread):
 	"""线程函数"""
 
@@ -95,6 +111,7 @@ class GAThread(QThread):
 		f = np.array([np.random.permutation(N) for _ in range(NP)])
 		R = None
 		Rlength = []
+		f_list = []
 
 		for gen in range(G):
 			# 计算路径长度
@@ -119,14 +136,19 @@ class GAThread(QThread):
 			f = F.copy()
 			f[0] = R
 			Rlength.append(minlen)
+			f_list.append(fitness)
 
-			v_on = self.online_judge(fitness, gen + 1)
-			v_off = self.offline_judge(Rlength, gen + 1)
+			v_on = online_judge(f_list, gen + 1, NP)
+			# print(v_on)
+			v_off = offline_judge(Rlength, gen + 1)
 			self.onEpochChanged.emit([minlen, v_on, v_off])
 			path = []
 			for r_ in R:
 				path.append([self.graph.nodes[r_]["x"], self.graph.nodes[r_]["y"]])
 			self.onPathChanged.emit(path, minlen.round(2))
+
+			# 休眠10ms
+			self.msleep(10)
 
 		return R, Rlength[-1].round(2)
 
@@ -142,15 +164,3 @@ class GAThread(QThread):
 
 	def set_G(self, G):
 		self.G = G
-
-	def online_judge(self, f, T):
-		v = 0
-		for i in range(0, T - 1):
-			v += f[i]
-		return v / T
-
-	def offline_judge(self, f_, T):
-		v = 0
-		for i in range(0, T - 1):
-			v += f_[i]
-		return v / T
