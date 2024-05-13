@@ -23,16 +23,11 @@ class Window(FluentWindow):
 		self.graph = GraphWidget('Graph Generate', self, self.g)
 		self.ga_chart = ChartWidget('GA Analysis Chart', self, self.g)
 		self.ga_result = ResultWidget('GA Result', self, self.g)
-		self.other_chart = ChartWidget('Other Analysis Chart', self, self.g)
-		self.other_result = ResultWidget('Other Result', self, self.g)
 		self.ga_calc = GAThread(self.g)
 
 		self.graph.onStatusChanged.connect(self.ga_chart.update)
-		self.graph.onStatusChanged.connect(self.other_chart.update)
 		self.graph.onGraphChanged.connect(self.ga_result.handle_graph_change)
 		self.graph.onGraphChanged.connect(self.ga_chart.update)
-		self.graph.onGraphChanged.connect(self.other_result.handle_graph_change)
-		self.graph.onGraphChanged.connect(self.other_chart.update)
 
 		self.ga_chart.onCalcStart.connect(self.start_calc)
 		self.ga_chart.onGSet.connect(self.ga_calc.set_G)
@@ -43,12 +38,6 @@ class Window(FluentWindow):
 		self.ga_calc.onFinished.connect(self.ga_chart.calc_finish)
 		self.ga_calc.onCalcFinished.connect(self.ga_result.handle_data_change)
 		self.ga_calc.onCalcFinished.connect(self.ga_chart.handle_data_change)
-
-		# self.ga_calc.onEpochChanged.connect(self.other_chart.sync_data)
-		# self.ga_calc.onFinished.connect(self.other_chart.calc_finish)
-		# self.ga_calc.onCalcFinished.connect(self.other_result.handle_data_change)
-
-		self.other_chart.onCalcStart.connect(self.start_calc)
 
 		self.onCalcStop.connect(self.stop_calc)
 
@@ -68,17 +57,6 @@ class Window(FluentWindow):
 		)
 		self.addSubInterface(self.ga_chart, MyIcon.CHART, 'Analysis Chart')
 		self.addSubInterface(self.ga_result, MyIcon.DATA, 'Data in Process')
-		self.navigationInterface.addSeparator()
-		self.navigationInterface.addItem(
-			routeKey='ALGORITHM',
-			icon=MyIcon.ALGORITHM,
-			text='Other Algorithm ↓',
-			onClick=self.do_nothing,
-			selectable=False,
-			tooltip='Other Algorithm ↓'
-		)
-		self.addSubInterface(self.other_chart, MyIcon.CHART, 'Analysis Chart')
-		self.addSubInterface(self.other_result, MyIcon.DATA, 'Data in Process')
 
 		self.navigationInterface.setExpandWidth(200)
 
