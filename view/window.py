@@ -1,12 +1,11 @@
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QWidget
 
 from utils.ga_calc import GAThread
 from view.resultWidget import ResultWidget
 from view.graphWidget import GraphWidget
 
-from qfluentwidgets import FluentWindow, SingleDirectionScrollArea
+from qfluentwidgets import FluentWindow
 
 from view.myIcon import MyIcon
 from view.chartWidget import ChartWidget

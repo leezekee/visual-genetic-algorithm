@@ -1,11 +1,8 @@
-import random
-
 import numpy as np
-from PyQt6.QtWidgets import (QWidget, QSlider, QApplication,
-                             QHBoxLayout, QVBoxLayout, QLabel)
-from PyQt6.QtCore import QObject, Qt, pyqtSignal
-from PyQt6.QtGui import QPainter, QFont, QColor, QPen, QIcon
-from qfluentwidgets import SubtitleLabel, setFont, TitleLabel, StrongBodyLabel, Slider
+from PyQt6.QtWidgets import (QWidget,
+                             QHBoxLayout, QVBoxLayout,)
+from PyQt6.QtCore import Qt, pyqtSignal
+from qfluentwidgets import TitleLabel, StrongBodyLabel, Slider
 
 from utils.graph import Graph
 from view.graphView import GraphView
@@ -24,6 +21,7 @@ class ResultWidget(QWidget):
 		self.graph = graph
 		self.text = text
 		self.distance = -1
+		self.distance_list = []
 		self.path_list = []
 		self.path = []
 		self.current = 0
@@ -67,13 +65,15 @@ class ResultWidget(QWidget):
 
 		self.setObjectName(self.text.replace(' ', '-'))
 
-	def handle_data_change(self, best_path, best_distance):
+	def handle_data_change(self, best_distance):
+		print(best_distance)
 		self.distance = best_distance
-		self.path = best_path
-		self.distanceLabel.setText(f"Distance: {self.distance}")
+		# self.path = best_path
+		self.distanceLabel.setText(f"Distance: {abs(self.distance)}")
 
-	def sync_data(self, path):
+	def sync_data(self, path, distance):
 		self.path_list.append(path)
+		self.distance_list.append(distance)
 		self.current += 1
 		self.total += 1
 		self.set_current(self.current)
@@ -106,6 +106,7 @@ class ResultWidget(QWidget):
 		self.graphView.graph = self.res_graph
 		self.graphView.update()
 		self.sliderLabel.setText(f"Epoch: {self.current}/{self.total}")
+		self.distanceLabel.setText(f"Distance: {self.distance_list[current - 1]}")
 		self.repaint()
 
 	def handle_graph_change(self):

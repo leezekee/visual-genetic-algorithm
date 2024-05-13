@@ -1,13 +1,10 @@
 from enum import Enum
 
-from PyQt6 import QtGui
-from PyQt6.QtGui import QValidator
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QGridLayout, QFrame
 from PyQt6.QtCore import Qt, pyqtSignal
-from qfluentwidgets import SubtitleLabel, TitleLabel, Slider, CaptionLabel, TransparentPushButton, LineEdit, \
+from qfluentwidgets import SubtitleLabel, TitleLabel,CaptionLabel, TransparentPushButton, \
 	PrimaryPushButton, SpinBox
 
-from view.graphView import GraphView
 from view.myIcon import MyIcon
 from view.chartView import ChartView
 
@@ -184,7 +181,7 @@ class ChartWidget(QWidget):
 		self.startButton.setEnabled(False)
 		self.repaint()
 
-	def handle_data_change(self, best_path, best_distance):
+	def handle_data_change(self, best_distance):
 		self.distance = best_distance
 		self.distanceLabel.setText(f"Distance: {self.distance}")
 		self.swtichButton.setEnabled(True)

@@ -1,8 +1,6 @@
-from PyQt6.QtWidgets import (QWidget, QSlider, QApplication,
-                             QHBoxLayout, QVBoxLayout, QLabel, QPushButton)
-from PyQt6.QtCore import QObject, Qt, pyqtSignal
-from PyQt6.QtGui import QPainter, QFont, QColor, QPen, QIcon
-from qfluentwidgets import SubtitleLabel, setFont, TitleLabel, TransparentToggleToolButton, TransparentPushButton
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
+from PyQt6.QtCore import pyqtSignal
+from qfluentwidgets import SubtitleLabel, TitleLabel, TransparentPushButton
 
 from view.graphView import GraphView
 from view.myIcon import MyIcon
@@ -85,4 +83,3 @@ class GraphWidget(QWidget):
 
 	def handle_graph_change(self):
 		self.onGraphChanged.emit()
-

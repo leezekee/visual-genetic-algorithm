@@ -67,8 +67,8 @@ class GAThread(QThread):
 	"""线程函数"""
 
 	onEpochChanged = pyqtSignal(list)
-	onPathChanged = pyqtSignal(list)
-	onCalcFinished = pyqtSignal([list, int])
+	onPathChanged = pyqtSignal(list, float)
+	onCalcFinished = pyqtSignal(float)
 	onFinished = pyqtSignal()
 
 	def __init__(self, graph=None):
@@ -119,19 +119,21 @@ class GAThread(QThread):
 			f = F.copy()
 			f[0] = R
 			Rlength.append(minlen)
+
 			v_on = self.online_judge(fitness, gen + 1)
 			v_off = self.offline_judge(Rlength, gen + 1)
 			self.onEpochChanged.emit([minlen, v_on, v_off])
 			path = []
 			for r_ in R:
 				path.append([self.graph.nodes[r_]["x"], self.graph.nodes[r_]["y"]])
-			self.onPathChanged.emit(path)
+			self.onPathChanged.emit(path, minlen.round(2))
 
-		return R, Rlength
+		return R, Rlength[-1].round(2)
 
 	def run(self):
 		best_path, best_distance = self.genetic_algorithm(self.graph.get_nodes(), G=self.G)
-		self.onCalcFinished.emit(best_path, best_distance)
+		# best_path, best_distance = self.tsp_genetic_algorithm(self.graph.get_nodes(), G=self.G)
+		self.onCalcFinished.emit(best_distance)
 		# self.onEpochChanged.emit([best_distance, best_distance, best_distance])
 		self.onFinished.emit()
 

@@ -1,11 +1,8 @@
 import math
 
-import numpy as np
-from PyQt6.QtWidgets import (QWidget, QSlider, QApplication,
-                             QHBoxLayout, QVBoxLayout, QLabel, QInputDialog, QDialog, QMessageBox, QFileDialog)
-from PyQt6.QtCore import QObject, Qt, pyqtSignal
-from PyQt6.QtGui import QPainter, QFont, QColor, QPen, QIcon, QCursor
-from qfluentwidgets import SubtitleLabel, setFont, TitleLabel, TransparentToggleToolButton, TransparentPushButton
+from PyQt6.QtWidgets import (QWidget, QFileDialog)
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QPainter, QFont, QColor, QPen
 
 from utils.mode import Mode
 

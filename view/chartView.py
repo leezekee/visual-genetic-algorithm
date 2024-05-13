@@ -2,7 +2,7 @@ import numpy as np
 import pyqtgraph as pg
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt
 from qfluentwidgets import StrongBodyLabel
 
 
